@@ -4,6 +4,7 @@ comment_width = 140
 max_width = 120
 
 format_code_in_doc_comments = true
+format_macro_bodies = true
 format_strings = true
 normalize_comments = true
 reorder_modules = true

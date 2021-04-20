@@ -60,7 +60,8 @@ mod tests {
     use super::*;
 
     fn bacen_static_sample() -> &'static str {
-        "00020126580014br.gov.bcb.pix0136123e4567-e12b-12d1-a456-4266554400005204000053039865802BR5913Fulano de Tal6008BRASILIA62070503***63041D3D"
+        "00020126580014br.gov.bcb.pix0136123e4567-e12b-12d1-a456-4266554400005204000053039865802BR5913Fulano de \
+         Tal6008BRASILIA62070503***63041D3D"
     }
 
     #[test]

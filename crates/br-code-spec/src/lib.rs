@@ -1,11 +1,10 @@
 //! Described on: https://www.bcb.gov.br/content/estabilidadefinanceira/pix/Regulamento_Pix/II_ManualdePadroesparaIniciacaodoPix_versao2-3-0.pdf
 
-use crc::{Algorithm, Crc, CRC_16_GENIBUS, CRC_16_XMODEM};
-use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use br_code_spec_derive::BrCodeEncoder;
 use helpers::Size;
-use json_payload::{DynamicCalendar, DynamicDebtor};
+use serde::{Deserialize, Serialize};
 
 pub(crate) mod helpers;
 mod json_payload;
@@ -147,6 +146,6 @@ mod tests {
             additional_data: inner,
         };
 
-        assert_eq!(sample.serialize(), "0002015904LTDA6200000201");
+        assert_eq!(sample.serialize(), "0002015904LTDA6206000201");
     }
 }
