@@ -1,8 +1,9 @@
 use crc::{Algorithm, Crc, CRC_16_IBM_3740};
+use std::borrow::Cow;
 
 pub(crate) const CRC_ALGO: Algorithm<u16> = CRC_16_IBM_3740;
 
-pub(crate) fn calculate_crc16(complete_pix: &str) -> u16 {
+pub fn calculate_crc16(complete_pix: &str) -> u16 {
     let crc = Crc::<u16>::new(&CRC_ALGO);
     let mut digest = crc.digest();
 
@@ -29,11 +30,11 @@ pub fn validate(key: &str) -> bool {
     check == final_crc
 }
 
-pub(crate) trait Encode {
+pub trait Encode {
     fn encode(&self) -> String;
 }
 
-pub(crate) trait Size {
+pub trait Size {
     fn char_count(&self) -> i32;
 }
 
@@ -44,6 +45,18 @@ impl Size for i32 {
 }
 
 impl Size for &str {
+    fn char_count(&self) -> i32 {
+        self.len() as i32
+    }
+}
+
+impl Size for Cow<'_, str> {
+    fn char_count(&self) -> i32 {
+        self.len() as i32
+    }
+}
+
+impl Size for &Cow<'_, str> {
     fn char_count(&self) -> i32 {
         self.len() as i32
     }

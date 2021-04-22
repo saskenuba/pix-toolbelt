@@ -1,5 +1,5 @@
 [package]
-name = "br-code-spec-derive"
+name = "emv-qrcps-derive"
 version = "0.1.0"
 authors = ["Martin <martin@hotmail.com.br>"]
 edition = "2018"

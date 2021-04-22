@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use br_code_spec_derive::BrCodeEncoder;
+use emv_qrcps_derive::EmvEncoder;
 use strum::IntoEnumIterator;
 use strum_macros::{EnumIter, IntoStaticStr};
 
-use crate::helpers::*;
+use std::borrow::Cow;
+
+use crate as emv_qrcps;
 
 #[derive(IntoStaticStr, EnumIter)]
 pub enum HasChildren {
@@ -15,37 +17,24 @@ pub enum HasChildren {
     AdditionalInformation,
 }
 
-#[derive(BrCodeEncoder, Clone, Debug)]
-struct MerchantAccountInformation {
+#[derive(EmvEncoder, Clone, Debug, PartialEq)]
+struct MerchantAccountInformation<'a> {
     #[encoder(id = "00")]
-    merchant_gui: String,
+    merchant_gui: Cow<'a, str>,
     #[encoder(id = "01")]
     /// Não deve conter o prefixo de procolo, ex: http.
     /// Acesso deve ser após validações, e exclusivamente em HTTPS.
-    merchant_url: String,
+    merchant_url: Cow<'a, str>,
 }
 
-#[derive(IntoStaticStr, EnumIter)]
-enum LookupTable {
-    #[strum(serialize = "01")]
-    PointOfInitiationMethod,
-    #[strum(serialize = "26")]
-    MerchantAccountInformation,
-    #[strum(serialize = "53")]
-    TransactionCurrency,
-    #[strum(serialize = "58")]
-    CountryCode,
-    #[strum(serialize = "59")]
-    MerchantName,
-    #[strum(serialize = "60")]
-    MerchantCity,
-    #[strum(serialize = "62")]
-    AdditionalData,
-    #[strum(serialize = "63")]
-    Crc16,
+pub trait Parsed<'a> {
+    fn from_lookup(map: &mut HashMap<&str, &'a str>) -> Self;
 }
 
-pub fn base_parser(source_str: &str) {
+pub fn base_parser<'a, T>(source_str: &'a str) -> T
+where
+    T: Parsed<'a>,
+{
     let mut cursor = source_str;
     let mut lookup = HashMap::new();
 
@@ -83,6 +72,8 @@ pub fn base_parser(source_str: &str) {
 
         cursor = remaining;
     }
+
+    T::from_lookup(&mut lookup)
 }
 
 /// Returns (header_id, inner_length, and rest)
@@ -103,9 +94,9 @@ mod tests {
 
     #[test]
     fn t_parser_simple() {
-        let basic = MerchantAccountInformationRef {
-            merchant_gui: "123e4567-e12b-12d1-a456-4272",
-            merchant_url: "oi",
+        let basic = MerchantAccountInformation {
+            merchant_gui: "123e4567-e12b-12d1-a456-4272".into(),
+            merchant_url: "oi".into(),
         };
 
         assert_eq!(basic, MerchantAccountInformation::from_str(sample_merchant()));
@@ -126,19 +117,77 @@ mod tests {
          005802BR5903Pix6003Pix62070503***63048287"
     }
 
-    #[test]
-    fn t_dynamic_sample() {
-        base_parser(bacen_dynamic_sample())
+    #[derive(BrCodeEncoder, Debug, Clone)]
+    struct SampleBrCode<'a> {
+        #[encoder(id = "00")]
+        format_indicator: Cow<'a, str>,
+
+        #[encoder(id = "59")]
+        merchant_name: Cow<'a, str>,
+    }
+
+    #[derive(BrCodeEncoder, Debug, Clone)]
+    struct SampleBrCodeOption<'a> {
+        #[encoder(id = "00")]
+        format_indicator: Cow<'a, str>,
+
+        #[encoder(id = "59")]
+        merchant_name: Cow<'a, str>,
+
+        #[encoder(id = "60")]
+        merchant_category: Option<Cow<'a, str>>,
+    }
+
+    #[derive(BrCodeEncoder, Debug, Clone)]
+    struct SampleBrCodeWithInnerOption<'a> {
+        #[encoder(id = "00")]
+        format_indicator: Cow<'a, str>,
+
+        #[encoder(id = "59")]
+        merchant_name: Cow<'a, str>,
+
+        #[encoder(id = "62")]
+        additional_data: InnerSample<'a>,
+    }
+
+    #[derive(BrCodeEncoder, Debug, Clone)]
+    struct InnerSample<'a> {
+        #[encoder(id = "00")]
+        what_is_this: Cow<'a, str>,
     }
 
     #[test]
-    fn t_generated_sample() {
-        base_parser(generated_sample())
+    fn t_non_inner_non_option() {
+        let sample = SampleBrCode {
+            format_indicator: "01".into(),
+            merchant_name: "LTDA".into(),
+        };
+        assert_eq!(sample.serialize(), "0002015904LTDA");
     }
 
     #[test]
-    fn t_static_sample() {
-        base_parser(bacen_static_sample())
+    fn t_non_inner_option() {
+        let sample = SampleBrCodeOption {
+            format_indicator: "01".into(),
+            merchant_name: "LTDA".into(),
+            merchant_category: None,
+        };
+        assert_eq!(sample.serialize(), "0002015904LTDA");
+    }
+
+    #[test]
+    fn t_inner_option() {
+        let inner = InnerSample {
+            what_is_this: "01".into(),
+        };
+
+        let sample = SampleBrCodeWithInnerOption {
+            format_indicator: "01".into(),
+            merchant_name: "LTDA".into(),
+            additional_data: inner,
+        };
+
+        assert_eq!(sample.serialize(), "0002015904LTDA6206000201");
     }
 
     #[test]

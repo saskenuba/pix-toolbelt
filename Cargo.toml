@@ -1,2 +1,2 @@
 [workspace]
-members = ["crates/br-code-spec", "crates/br-code-spec-derive"]
+members = ["crates/*"]
