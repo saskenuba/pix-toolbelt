@@ -1,6 +1,6 @@
 # Pix-toolbelt
 
-Features a collection of crates to ease the creation and validation of PIX BrCode, a subset of the EMV-QrCode 
+Features a collection of crates to ease the creation and validation of PIX BrCode, a subset of the EMV-QrCode
 specification.
 
 It hopes to be the go-to library for br-code and pix related operations.
@@ -22,7 +22,7 @@ Features a non-alloc deserializer, and a serializer for any specification based 
 
 ## pix-brcode
 
-Not implemented.
+In progress...
 
 Features the creation, deserialization of PIX Br Code strings, with proper CRC16 checks. Works by extending the
 functionality provided by [emv-qrcps crate](#emv-qrcps).
@@ -33,7 +33,7 @@ Can also validate `Location` URL for `Merchant Account Information`, used on PIX
 
 ## pix-api-client
 
-Not implemented.
+In progress...
 
 Features a strongly typed API client in Rust, that should work for any PIX-API compliant PSPs.
 
