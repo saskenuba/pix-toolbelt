@@ -1,9 +1,7 @@
-use std::marker::PhantomData;
-
 use reqwest::{Method, RequestBuilder};
 use serde::{Deserialize, Serialize};
 
-use crate::{ApiResponse, PixClient};
+use crate::{ApiRequest, PixClient};
 
 pub struct CobEndpoint<'a> {
     inner: &'a PixClient,
@@ -78,8 +76,8 @@ impl Devedor {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Valor {
     pub original: String,
-    // #[serde(rename = "modalidadeAlteracao")]
-    // pub modalidade_alteracao: i64,
+    /* #[serde(rename = "modalidadeAlteracao")]
+     * pub modalidade_alteracao: i64, */
 }
 
 impl Valor {
@@ -121,14 +119,11 @@ impl<'a> CobEndpoint<'a> {
 
     /// Criar uma cobrança imediata.
     /// Diferente de `criar_cobranca_imediata`, o `txid` é definido pelo PSP.
-    pub fn criar_cobranca_imediata(&self, payload: CobPayload) -> ApiResponse<CobResponse> {
+    pub fn criar_cobranca_imediata(&self, payload: CobPayload) -> ApiRequest<CobResponse> {
         let endpoint = format!("{}/cob", &*self.inner.base_endpoint);
         let request = self.inner.client.request(Method::POST, &self.inner.base_endpoint);
 
-        ApiResponse {
-            request,
-            response_type: PhantomData::default(),
-        }
+        ApiRequest::new(request)
     }
 
     pub fn consultar_cobrancas(&self, payload: CobPayload) -> RequestBuilder {
@@ -143,9 +138,8 @@ pub struct CobResponse {}
 
 #[cfg(test)]
 mod tests {
-    use crate::Executor;
-
     use super::*;
+    use crate::Executor;
 
     #[tokio::test]
     async fn sample() {

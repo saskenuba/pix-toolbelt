@@ -1,3 +1,29 @@
+//!
+//! You don't need to wrap the client into an `Arc`, since its inner reqwest client already is wrapped.
+//!
+//! # Example: Creating and calling an endpoint
+//! ```no_run
+//! use std::fs::File;
+//! use std::io::Read;
+//!
+//! use pix_api_client::cob::CobPayload;
+//! use pix_api_client::{Executor, PixClient};
+//!
+//! let mut cert_buffer = Vec::new();
+//! File::open("my_cert.pem")?.read_to_end(&mut cert_buffer)?;
+//!
+//! let pix_client = PixClient::new("https://my-compliant-endpoint/pix/v2", "client-id", "client-secret", cert_buffer);
+//!
+//! let payload = CobPayload::default();
+//! let response = pix_client
+//!     .webhook()
+//!     .criar_por_chave(
+//!         "minha-chave-pix".to_string(),
+//!         "https://pix.example.com/api/webhook/".to_string(),
+//!     )
+//!     .execute();
+//! ```
+
 use std::marker::PhantomData;
 
 use async_trait::async_trait;
@@ -7,6 +33,7 @@ use serde::de::DeserializeOwned;
 
 pub mod cob;
 pub mod errors;
+pub mod webhook;
 
 mod extensions;
 
@@ -22,7 +49,6 @@ impl PixClientBuilder {}
 /// A strongly typed client for performing requests to a pix-api compliant provider.
 ///
 /// # Example
-///
 ///
 ///
 #[derive(Debug)]
@@ -42,11 +68,11 @@ impl PixClient {
     /// ```no_run
     /// use std::fs::File;
     /// use std::io::Read;
+    ///
     /// use pix_api_client::PixClient;
     ///
     /// let mut cert_buffer = Vec::new();
-    /// File::open("my_cert.pem")?
-    ///     .read_to_end(&mut cert_buffer)?;
+    /// File::open("my_cert.pem")?.read_to_end(&mut cert_buffer)?;
     ///
     /// let pix_client = PixClient::new("https://*", "client-id", "client-secret", cert_buffer);
     /// ```
@@ -75,13 +101,23 @@ impl PixClient {
     }
 }
 
-pub struct ApiResponse<T> {
+#[derive(Debug)]
+pub struct ApiRequest<T> {
     request: RequestBuilder,
     response_type: PhantomData<T>,
 }
 
+impl<T> ApiRequest<T> {
+    fn new(request: RequestBuilder) -> ApiRequest<T> {
+        Self {
+            request,
+            response_type: Default::default(),
+        }
+    }
+}
+
 #[async_trait]
-impl<T> Executor<T> for ApiResponse<T>
+impl<T> Executor<T> for ApiRequest<T>
 where
     T: DeserializeOwned + Send,
 {
@@ -93,6 +129,6 @@ where
 }
 
 #[async_trait]
-trait Executor<T> {
+pub trait Executor<T> {
     async fn execute(self) -> T;
 }

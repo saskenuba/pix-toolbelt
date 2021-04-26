@@ -8,7 +8,6 @@ It hopes to be the go-to library for br-code and pix related operations.
 ## Table of Contents
 
 - [Pix-toolbelt](#pix-toolbelt)
-    * [Table of Contents](#table-of-contents)
     * [emv-qrcps](#emv-qrcps)
     * [pix-spec](#pix-spec)
     * [pix-api-client](#pix-api-client)
@@ -16,13 +15,13 @@ It hopes to be the go-to library for br-code and pix related operations.
 
 ## emv-qrcps
 
-Implemented.
+Status: Implemented.
 
 Features a non-alloc deserializer, and a serializer for any specification based on EMV-QrCode.
 
 ## pix-brcode
 
-In progress...
+Status: In progress...
 
 Features the creation, deserialization of PIX Br Code strings, with proper CRC16 checks. Works by extending the
 functionality provided by [emv-qrcps crate](#emv-qrcps).
@@ -33,7 +32,7 @@ Can also validate `Location` URL for `Merchant Account Information`, used on PIX
 
 ## pix-api-client
 
-In progress...
+Status: In progress...
 
 Features a strongly typed API client in Rust, that should work for any PIX-API compliant PSPs.
 

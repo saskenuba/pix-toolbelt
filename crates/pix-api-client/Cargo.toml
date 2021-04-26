@@ -3,10 +3,12 @@ name = "pix-api-client"
 version = "0.1.0"
 authors = ["Martin <martin@hotmail.com.br>"]
 edition = "2018"
+repository = "https://github.com/saskenuba/pix-toolbelt/tree/master/crates/pix-api-client"
+license = "MIT"
 
 [features]
 default = []
-blocking = ["reqwest/blocking"]
+# blocking = ["reqwest/blocking"]
 
 [dependencies]
 async-trait = "^0.1"
