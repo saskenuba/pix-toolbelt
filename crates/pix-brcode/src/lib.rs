@@ -14,7 +14,7 @@ pub mod qr_dinamico;
 pub mod qr_estatico;
 
 #[derive(EmvEncoder, Clone, Debug)]
-struct AdditionalData<'a> {
+pub struct AdditionalData<'a> {
     #[encoder(id = "05")]
     /// Default de "***"
     /// Não deve ser preenchido no dinâmico, caso seja, deve ser ignorado.
@@ -22,13 +22,26 @@ struct AdditionalData<'a> {
 }
 
 #[derive(EmvEncoder, Clone, Debug)]
-struct MerchantAccountInformation<'a> {
+pub struct MerchantAccountInformation<'a> {
     #[encoder(id = "00")]
-    merchant_gui: Cow<'a, str>,
-    #[encoder(id = "01")]
-    /// Não deve conter o prefixo de procolo, ex: http.
-    /// Acesso deve ser após validações, e exclusivamente em HTTPS.
-    merchant_url: Option<Cow<'a, str>>,
+    /// Versão do Payload QRCPS-MPM. Default em "01"
+    pub gui: Cow<'a, str>,
+
+    #[encoder(id = "21")]
+    /// Instituição do usuário recebedor
+    pub instituicao: Cow<'a, str>,
+
+    #[encoder(id = "22")]
+    /// Tipo de conta do usuário recebedor
+    pub tipo_conta: Cow<'a, str>,
+
+    #[encoder(id = "23")]
+    /// Tipo de conta do usuário recebedor
+    pub agencia: Cow<'a, str>,
+
+    #[encoder(id = "24")]
+    /// Numero da conta do usuário recebedor
+    pub conta: Cow<'a, str>,
 }
 
 #[derive(EmvEncoder, Clone, Debug)]
