@@ -1,4 +1,4 @@
-use reqwest::{Method, RequestBuilder};
+use reqwest::Method;
 use serde::{Deserialize, Serialize};
 
 use crate::{ApiRequest, PixClient};
@@ -37,32 +37,34 @@ impl<'a> WebhookEndpoint<'a> {
         ApiRequest::new(request.json(&payload))
     }
 
-    pub fn consultar_por_chave(&self, chave_pix: String, webhook_url: String) -> RequestBuilder {
-        let endpoint = format!("{}/webook/{}", &*self.inner.base_endpoint, chave_pix);
-        self.inner.client.request(Method::GET, endpoint)
-    }
-    pub fn cancelar_por_chave(&self, chave_pix: String, webhook_url: String) -> RequestBuilder {
+    pub fn consultar_por_chave(&self, chave_pix: String, webhook_url: String) -> ApiRequest<WebHookResponse> {
         let endpoint = format!("{}/webhook/{}", &*self.inner.base_endpoint, chave_pix);
-        self.inner.client.request(Method::DELETE, &self.inner.base_endpoint)
+        let request = self.inner.client.request(Method::GET, endpoint);
+        let payload = WebHookPayload::new(webhook_url);
+
+        ApiRequest::new(request.json(&payload))
+    }
+    pub fn cancelar_por_chave(&self, chave_pix: String, webhook_url: String) -> ApiRequest<WebHookResponse> {
+        let endpoint = format!("{}/webhook/{}", &*self.inner.base_endpoint, chave_pix);
+        let request = self.inner.client.request(Method::DELETE, endpoint);
+        let payload = WebHookPayload::new(webhook_url);
+
+        ApiRequest::new(request.json(&payload))
     }
 
     /// Criar uma cobrança imediata.
     /// Diferente de `criar_cobranca_imediata`, o `txid` é definido pelo PSP.
-    pub fn consultar_todos(&self) -> ApiRequest<CobResponse> {
-        let endpoint = format!("{}/webook", &*self.inner.base_endpoint);
-        let request = self.inner.client.request(Method::GET, &self.inner.base_endpoint);
+    pub fn consultar_todos(&self) -> ApiRequest<WebHookResponse> {
+        let endpoint = format!("{}/webhook", &*self.inner.base_endpoint);
+        let request = self.inner.client.request(Method::GET, endpoint);
 
         ApiRequest::new(request)
     }
 }
 
-#[derive(Debug, Deserialize)]
-pub struct CobResponse {}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Executor;
 
     #[tokio::test]
     async fn sample() {
