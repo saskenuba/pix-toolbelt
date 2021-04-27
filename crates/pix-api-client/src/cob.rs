@@ -8,6 +8,7 @@ pub struct CobEndpoint<'a> {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[allow(non_camel_case_types)]
 enum CobrancaStatus {
     ATIVA,
     CONCLUIDA,
@@ -133,21 +134,24 @@ impl PixClient {
 }
 
 impl<'a> CobEndpoint<'a> {
-    pub fn criar_cobranca_txid(&self, txid: String, payload: CobrancaImediata) -> RequestBuilder {
+    pub fn criar_cobranca_txid(&self, txid: String, payload: CobrancaImediata) -> ApiRequest<CobrancaImediata> {
         let endpoint = format!("{}/cob/{}", &*self.inner.base_endpoint, txid);
+        let request = self.inner.client.request(Method::PUT, endpoint);
 
-        self.inner.client.request(Method::PUT, endpoint)
+        ApiRequest::new(request.json(&payload))
     }
 
-    pub fn consultar_cobranca_txid(&self, txid: String, payload: CobrancaImediata) -> RequestBuilder {
+    pub fn consultar_cobranca_txid(&self, txid: String, payload: CobrancaImediata) -> ApiRequest<CobrancaImediata> {
         let endpoint = format!("{}/cob/{}", &*self.inner.base_endpoint, txid);
-        self.inner.client.request(Method::GET, endpoint)
+        let request = self.inner.client.request(Method::GET, endpoint);
+
+        ApiRequest::new(request.json(&payload))
     }
     pub fn revisar_cobranca_txid(&self, txid: String, payload: CobrancaImediata) -> ApiRequest<CobrancaImediata> {
         let endpoint = format!("{}/cob/{}", &*self.inner.base_endpoint, txid);
         let request = self.inner.client.request(Method::POST, endpoint);
 
-        ApiRequest::new(request)
+        ApiRequest::new(request.json(&payload))
     }
 
     /// Criar uma cobrança imediata.
@@ -156,42 +160,18 @@ impl<'a> CobEndpoint<'a> {
         let endpoint = format!("{}/cob", &*self.inner.base_endpoint);
         let request = self.inner.client.request(Method::POST, endpoint);
 
-        ApiRequest::new(request)
+        ApiRequest::new(request.json(&payload))
     }
 
-    pub fn consultar_cobrancas(&self, payload: CobrancaImediata) -> RequestBuilder {
+    pub fn consultar_cobrancas(&self) -> RequestBuilder {
         let endpoint = format!("{}/cob", &*self.inner.base_endpoint);
-
-        self.inner.client.request(Method::GET, &self.inner.base_endpoint)
+        self.inner.client.request(Method::GET, endpoint)
     }
 }
-
-#[derive(Debug, Deserialize)]
-pub struct CobResponse {}
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Executor;
-
-    #[tokio::test]
-    async fn sample() {
-        let certificate = vec![12; 50];
-        let client = PixClient::new("a", "a", "a", certificate);
-
-        let payload = CobrancaImediata {
-            calendario: Default::default(),
-            devedor: Default::default(),
-            valor: Default::default(),
-            chave_pix_recebedor: "".to_string(),
-            txid: None,
-            location: None,
-            solicitacao_pagador: None,
-            info_adicionais: None,
-        };
-
-        let teste = client.cob().criar_cobranca_imediata(payload).execute().await;
-    }
 
     #[test]
     fn t_value() {

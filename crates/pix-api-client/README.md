@@ -16,7 +16,6 @@ File::open("my_cert.pem")?.read_to_end(&mut cert_buffer)?;
 
 let pix_client = PixClient::new("https://my-compliant-endpoint/pix/v2", "client-id", "client-secret", cert_buffer);
 
-let payload = CobrancaImediata::default();
 let response = pix_client
     .webhook()
     .criar_por_chave(
@@ -35,6 +34,7 @@ let response = pix_client
 use pix_api_client::cob::{CobrancaImediata, Devedor};
 use pix_api_client::{Executor, PixClient};
 use pix_brcode::qr_dinamico::PixDinamicoSchema;
+use pix_api_client::extensions::FromResponse;
 
 
 
@@ -43,13 +43,13 @@ let pix_client = PixClient::new("https://my-compliant-endpoint/pix/v2", "client-
 let devedor = Devedor::new_pessoa_fisica("00000000000".to_string(), "Fulano de tal".to_string());
 let payload = CobrancaImediata::new(10.25, "my-key".to_string(), devedor);
 
-let response = pix_client
+let response: CobrancaImediata = pix_client
     .cob()
     .criar_cobranca_imediata(payload)
     .execute()
     .await;
 
-let pix: String = PixDinamicoSchema::from(response).serialize_with_src();
+let pix: String = PixDinamicoSchema::from_cobranca_imediata_basic(response, "minha loja", "minha cidade").serialize_with_src();
 
 
 }

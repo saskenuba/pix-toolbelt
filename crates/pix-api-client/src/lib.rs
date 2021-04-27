@@ -17,7 +17,6 @@
 //!
 //! let pix_client = PixClient::new("https://my-compliant-endpoint/pix/v2", "client-id", "client-secret", cert_buffer);
 //!
-//! let payload = CobrancaImediata::default();
 //! let response = pix_client
 //!     .webhook()
 //!     .criar_por_chave(
@@ -39,8 +38,9 @@
 //! use pix_api_client::cob::{CobrancaImediata, Devedor};
 //! use pix_api_client::{Executor, PixClient};
 //! use pix_brcode::qr_dinamico::PixDinamicoSchema;
+//! use pix_api_client::extensions::FromResponse;
 //!
-//! # fn main() -> Result<(), anyhow::Error> {
+//! # async fn doc_test() -> Result<(), anyhow::Error> {
 //!
 //! # let mut cert_buffer = Vec::new();
 //! # File::open("my_cert.pem")?.read_to_end(&mut cert_buffer)?;
@@ -50,13 +50,13 @@
 //! let devedor = Devedor::new_pessoa_fisica("00000000000".to_string(), "Fulano de tal".to_string());
 //! let payload = CobrancaImediata::new(10.25, "my-key".to_string(), devedor);
 //!
-//! let response = pix_client
+//! let response: CobrancaImediata = pix_client
 //!     .cob()
 //!     .criar_cobranca_imediata(payload)
 //!     .execute()
 //!     .await;
 //!
-//! let pix: String = PixDinamicoSchema::from(response).serialize_with_src();
+//! let pix: String = PixDinamicoSchema::from_cobranca_imediata_basic(response, "minha loja", "minha cidade").serialize_with_src();
 //!
 //! # Ok(())
 //!
@@ -74,7 +74,7 @@ pub mod cob;
 pub mod errors;
 pub mod webhook;
 
-mod extensions;
+pub mod extensions;
 
 #[derive(Debug)]
 struct PixClientBuilder {
@@ -91,14 +91,15 @@ impl PixClientBuilder {}
 #[derive(Debug)]
 pub struct PixClient {
     client: Client,
-    encoded: String,
     certificate: Vec<u8>,
 
     base_endpoint: String,
 }
 
 impl PixClient {
-    /// Creates a new `PixClient`.
+    /// Creates a new `PixClient` with customized headers.
+    ///
+    /// This is specially useful, since how the authorization is encoded varies between PSP's.
     ///
     /// # Example
     ///
@@ -107,15 +108,45 @@ impl PixClient {
     /// # use std::io::{Read, Error};
     ///
     /// use pix_api_client::PixClient;
+    /// use reqwest::header;
     ///
     /// # fn teste() -> Result<(), anyhow::Error> {
     ///     let mut cert_buffer = Vec::new();
     ///     File::open("my_cert.pem")?.read_to_end(&mut cert_buffer)?;
     ///
-    ///     let pix_client = PixClient::new("https://*", "client-id", "client-secret", cert_buffer);
-    /// # Ok(())
+    ///     let username = "my-id";
+    ///     let secret = "my-secret";
+    ///     let formatted_authorization = format!("{}:{}", username, secret);
+    ///     let encoded_auth = base64::encode(formatted_authorization);
+    ///
+    ///     let pix_client = PixClient::new_with_custom_headers("https://*", |headers| {
+    ///         headers.insert(header::AUTHORIZATION, encoded_auth.parse().unwrap()).unwrap();
+    ///     }, cert_buffer);
+    ///
+    /// #   Ok(())
     /// }
     /// ```
+    pub fn new_with_custom_headers<F>(endpoint: &str, mut custom_headers: F, certificate: Vec<u8>) -> PixClient
+    where
+        F: FnMut(&mut HeaderMap),
+    {
+        let cert = Certificate::from_pem(&certificate).unwrap();
+        let mut default_headers = HeaderMap::new();
+
+        custom_headers(&mut default_headers);
+
+        let client = Client::builder()
+            .add_root_certificate(cert)
+            .default_headers(default_headers)
+            .build()
+            .unwrap();
+
+        Self {
+            client,
+            certificate,
+            base_endpoint: endpoint.to_string(),
+        }
+    }
     pub fn new(endpoint: &str, username: &str, secret: &str, certificate: Vec<u8>) -> PixClient {
         let formatted_authorization = format!("{}:{}", username, secret);
         let encoded_auth = base64::encode(formatted_authorization);
@@ -134,7 +165,6 @@ impl PixClient {
 
         Self {
             client,
-            encoded: encoded_auth,
             certificate,
             base_endpoint: endpoint.to_string(),
         }

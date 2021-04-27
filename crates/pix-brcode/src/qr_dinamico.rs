@@ -36,6 +36,7 @@ pub struct PixDinamicoSchema<'a> {
     pub merchant_account_information: MerchantAccountInformation<'a>,
 
     #[encoder(id = "52")]
+    /// Defaults to "0000"
     pub merchant_category_code: Cow<'a, str>,
 
     /// Defaults to "968", as BRL.
@@ -66,10 +67,17 @@ pub struct PixDinamicoSchema<'a> {
 }
 
 impl<'a> PixDinamicoSchema<'a> {
-    pub fn standard() -> Self {
+    /// Creates the most basic version of the QR Code, with every possible field with its default.
+    pub fn standard<MA, MC, TA, L>(merchant_name: MA, merchant_city: MC, transaction_amount: TA, location: L) -> Self
+    where
+        MA: Into<Cow<'a, str>>,
+        MC: Into<Cow<'a, str>>,
+        TA: Into<Cow<'a, str>>,
+        L: Into<Cow<'a, str>>,
+    {
         let merchant = MerchantAccountInformation {
             merchant_gui: "br.gov.bcb.pix".into(),
-            merchant_location_url: Default::default(),
+            merchant_location_url: location.into(),
         };
 
         let additional_data = AdditionalData { txid: "***".into() };
@@ -79,12 +87,12 @@ impl<'a> PixDinamicoSchema<'a> {
             point_of_initiation_method: Some("12".into()),
 
             merchant_account_information: merchant,
-            merchant_category_code: Default::default(),
+            merchant_category_code: "0000".into(),
             transaction_currency: "986".into(),
-            transaction_amount: None,
+            transaction_amount: Some(transaction_amount.into()),
             country_code: "BR".into(),
-            merchant_name: Default::default(),
-            merchant_city: Default::default(),
+            merchant_name: merchant_name.into(),
+            merchant_city: merchant_city.into(),
             postal_code: None,
             additional_data,
         }

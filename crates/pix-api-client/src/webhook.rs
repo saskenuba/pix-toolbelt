@@ -61,16 +61,3 @@ impl<'a> WebhookEndpoint<'a> {
         ApiRequest::new(request)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn sample() {
-        let certificate = vec![12; 50];
-        let client = PixClient::new("a", "a", "a", certificate);
-
-        let teste = client.webhook().criar_por_chave("abas".to_string(), "link".to_string());
-    }
-}
