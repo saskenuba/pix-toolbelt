@@ -28,22 +28,20 @@ let pix_client = PixClient::new_with_custom_headers("https://my-pix-h", |headers
 
     // and then insert it
     headers.insert(header::AUTHORIZATION, encoded_auth.parse().unwrap()).unwrap();
-    }, cert_buffer);
+}, cert_buffer);
 
 let oauth_response = pix_client
     .oauth()
     .autenticar()
     .execute()
-    .await;
+    .await?;
 
 // retrieve your new access token, and store it as your new authorization header
 let token = oauth_response.access_token;
 pix_client.swap_authorization_token(token.to_string());
 
-// Your client is ready for any further calls.
+// Your client is ready for any further api calls.
 
-
-}
 ```
 
 ## Example: Create a new QRCode from a create immediate transaction endpoint
@@ -61,12 +59,10 @@ let response: CobrancaImediata = pix_client
     .cob()
     .criar_cobranca_imediata(payload)
     .execute()
-    .await;
+    .await?;
 
 let pix: String = PixDinamicoSchema::from_cobranca_imediata_basic(response, "minha loja", "minha cidade").serialize_with_src();
 
-
-}
 ```
 
 

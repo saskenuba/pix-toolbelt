@@ -143,24 +143,18 @@ impl<'a> CobEndpoint<'a> {
 
     pub fn consultar_cobranca_txid(&self, txid: String, payload: CobrancaImediata) -> ApiRequest<CobrancaImediata> {
         let endpoint = format!("{}/cob/{}", &*self.inner.base_endpoint, txid);
-        let request = self.inner.client.request(Method::GET, endpoint);
-
-        ApiRequest::new(request.json(&payload))
+        self.inner.request_with_headers(Method::GET, &*endpoint, payload)
     }
     pub fn revisar_cobranca_txid(&self, txid: String, payload: CobrancaImediata) -> ApiRequest<CobrancaImediata> {
         let endpoint = format!("{}/cob/{}", &*self.inner.base_endpoint, txid);
-        let request = self.inner.client.request(Method::POST, endpoint);
-
-        ApiRequest::new(request.json(&payload))
+        self.inner.request_with_headers(Method::POST, &*endpoint, payload)
     }
 
     /// Criar uma cobrança imediata.
     /// Diferente de `criar_cobranca_imediata`, o `txid` é definido pelo PSP.
     pub fn criar_cobranca_imediata(&self, payload: CobrancaImediata) -> ApiRequest<CobrancaImediata> {
         let endpoint = format!("{}/cob", &*self.inner.base_endpoint);
-        let request = self.inner.client.request(Method::POST, endpoint);
-
-        ApiRequest::new(request.json(&payload))
+        self.inner.request_with_headers(Method::POST, &*endpoint, payload)
     }
 
     pub fn consultar_cobrancas(&self) -> RequestBuilder {

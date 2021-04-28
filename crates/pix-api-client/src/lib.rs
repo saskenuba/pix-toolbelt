@@ -29,23 +29,22 @@
 //!
 //!     // and then insert it
 //!     headers.insert(header::AUTHORIZATION, encoded_auth.parse().unwrap()).unwrap();
-//!     }, cert_buffer);
+//! }, cert_buffer);
 //!
 //! let oauth_response = pix_client
 //!     .oauth()
 //!     .autenticar()
 //!     .execute()
-//!     .await;
+//!     .await?;
 //!
 //! // retrieve your new access token, and store it as your new authorization header
 //! let token = oauth_response.access_token;
 //! pix_client.swap_authorization_token(token.to_string());
 //!
-//! // Your client is ready for any further calls.
+//! // Your client is ready for any further api calls.
 //!
 //! # Ok(())
-//!
-//! }
+//! # }
 //! ```
 //!
 //! # Example: Create a new QRCode from a create immediate transaction endpoint
@@ -69,13 +68,12 @@
 //!     .cob()
 //!     .criar_cobranca_imediata(payload)
 //!     .execute()
-//!     .await;
+//!     .await?;
 //!
 //! let pix: String = PixDinamicoSchema::from_cobranca_imediata_basic(response, "minha loja", "minha cidade").serialize_with_src();
 //!
 //! # Ok(())
-//!
-//! }
+//! # }
 //! ```
 //!
 pub use reqwest::header;
@@ -83,10 +81,11 @@ pub use reqwest::header;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
+use crate::errors::{ApiResult, PixError};
 use arc_swap::ArcSwap;
 use async_trait::async_trait;
 use reqwest::header::HeaderMap;
-use reqwest::{Certificate, Client, Method, RequestBuilder};
+use reqwest::{Certificate, Client, Method, RequestBuilder, StatusCode};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
@@ -130,7 +129,6 @@ impl PixClient {
     /// ```no_run
     /// # use std::fs::File;
     /// # use std::io::{Read, Error};
-    ///
     /// use pix_api_client::PixClient;
     /// use reqwest::header;
     ///
@@ -148,7 +146,7 @@ impl PixClient {
     ///     }, cert_buffer);
     ///
     /// #   Ok(())
-    /// }
+    /// # }
     /// ```
     pub fn new_with_custom_headers<F>(endpoint: &str, mut custom_headers: F, certificate: Vec<u8>) -> PixClient
     where
@@ -208,15 +206,15 @@ impl PixClient {
         self.headers.store(Arc::new(default_headers));
     }
 
-    fn request_with_headers<Payload, ResponseType>(
+    fn request_with_headers<Payload, Response>(
         &self,
         method: Method,
         endpoint: &str,
         payload: Payload,
-    ) -> ApiRequest<ResponseType>
+    ) -> ApiRequest<Response>
     where
         Payload: Serialize,
-        ResponseType: DeserializeOwned,
+        Response: DeserializeOwned,
     {
         let inner_headers = &**self.headers.load();
         let request = self.client.request(method, endpoint).headers(inner_headers.clone());
@@ -226,9 +224,9 @@ impl PixClient {
 }
 
 #[derive(Debug)]
-pub struct ApiRequest<ResponseType> {
+pub struct ApiRequest<Response> {
     request: RequestBuilder,
-    response_type: PhantomData<ResponseType>,
+    response_type: PhantomData<Response>,
 }
 
 impl<T> ApiRequest<T> {
@@ -245,14 +243,28 @@ impl<ResponseType> Executor<ResponseType> for ApiRequest<ResponseType>
 where
     ResponseType: DeserializeOwned + Send,
 {
-    async fn execute(self) -> ResponseType {
-        let result = self.request.send().await.unwrap();
-        let deserialized_response = result.json::<ResponseType>().await.unwrap();
-        deserialized_response
+    async fn execute(self) -> ApiResult<ResponseType> {
+        let result = self.request.send().await?;
+        let status_code = result.status();
+
+        if !status_code.is_success() {
+            match status_code {
+                StatusCode::UNAUTHORIZED => return Err(PixError::InvalidCredentials),
+                StatusCode::BAD_REQUEST => return Err(PixError::PayloadError),
+                _ => {}
+            }
+        }
+
+        let deserialized_response = result
+            .json::<ResponseType>()
+            .await
+            .map_err(|_| PixError::NonCompliantResponse)?;
+
+        Ok(deserialized_response)
     }
 }
 
 #[async_trait]
 pub trait Executor<T> {
-    async fn execute(self) -> T;
+    async fn execute(self) -> ApiResult<T>;
 }
