@@ -28,6 +28,47 @@ impl PixClient {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct WebHookResponse {}
 
+/// Base response object used by the `WebHook` for any transaction.
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct WebHookCallbackResponse {
+    pub pix: Vec<PixInput>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PixInput {
+    #[serde(rename = "endToEndId")]
+    pub end_to_end_id: String,
+    /// Transaction id
+    pub txid: Option<String>,
+    /// Beneficiary's Pix Key
+    pub chave: String,
+    pub valor: String,
+    pub horario: String,
+
+    #[serde(rename = "infoPagador")]
+    pub info_pagador: Option<String>,
+    pub devolucoes: Option<Vec<Devolucoes>>,
+    pub tipo: Option<String>,
+    pub status: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Devolucoes {
+    /// Id gerado pelo cliente para representar unicamente uma devolução.
+    pub id: String,
+    /// ReturnIdentification que transita na PACS004.
+    #[serde(rename = "rtrId")]
+    pub rtr_id: String,
+    pub valor: String,
+    pub horario: Horario,
+    pub status: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Horario {
+    pub solicitacao: String,
+}
+
 impl<'a> WebhookEndpoint<'a> {
     pub fn criar_por_chave(&self, chave_pix: String, webhook_url: String) -> ApiRequest<WebHookResponse> {
         let endpoint = format!("{}/webhook/{}", &*self.inner.base_endpoint, chave_pix);

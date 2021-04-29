@@ -1,9 +1,9 @@
-//! You don't need to wrap the client into an `Arc`, since its inner reqwest client already is wrapped.
+//! You don't need to wrap `PixClient` into an `Arc`, since its inner client is already wrapped.
 //!
 //! ## Note
 //!
-//! You need to take care munually of renewing your oauth token. This is accomplished very easily
-//! with the helper functions provided by the `PixClient`.
+//! You must take care of manually renewing your oauth token. This is accomplished easily
+//! with helper functions provided by the `PixClient`.
 //!
 //! # Example: Create a new client and fetch the oauth token
 //!

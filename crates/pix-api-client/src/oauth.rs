@@ -20,14 +20,6 @@ impl Default for OauthTokenPayload {
     }
 }
 
-impl OauthTokenPayload {
-    pub fn new(webhook_url: String) -> OauthTokenPayload {
-        Self {
-            grant_type: webhook_url,
-        }
-    }
-}
-
 impl PixClient {
     pub fn oauth(&self) -> OauthTokenEndpoint {
         OauthTokenEndpoint { inner: &self }
