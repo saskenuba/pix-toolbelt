@@ -18,7 +18,8 @@ enum CobrancaStatus {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CobrancaImediata {
-    pub calendario: Calendario,
+    /// Por default, expira em 3600 segundos, i.e 1h
+    pub calendario: Option<Calendario>,
     pub devedor: Devedor,
     /// Valor em string
     pub valor: Valor,
@@ -28,15 +29,19 @@ pub struct CobrancaImediata {
     pub chave_pix_recebedor: String,
 
     /// Id da Transação. Exclusivo como resposta.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub txid: Option<String>,
 
     #[serde(rename = "loc")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub location: Option<Location>,
 
     /// Campo que será para que o pagador desta cobrança insira uma informação.
     /// Sua implementação depende do PSP do pagador. Não é garantido seu preenchimento. Verifique.
     #[serde(rename = "solicitacaoPagador")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub solicitacao_pagador: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "infoAdicionais")]
     pub info_adicionais: Option<Vec<InfoAdicionais>>,
 }
@@ -47,7 +52,7 @@ impl CobrancaImediata {
         let valor = Valor::new(valor, false);
 
         Self {
-            calendario: Default::default(),
+            calendario: Some(Default::default()),
             devedor,
             valor,
             chave_pix_recebedor,
@@ -59,17 +64,31 @@ impl CobrancaImediata {
     }
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Calendario {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub criacao: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub apresentacao: Option<String>,
     /// Segundos para a expiração da cobrança, a partir do campo `Calendario.criacao`.
     pub expiracao: i64,
 }
 
+impl Default for Calendario {
+    fn default() -> Self {
+        Self {
+            criacao: None,
+            apresentacao: None,
+            expiracao: 3600,
+        }
+    }
+}
+
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Devedor {
+    #[serde(skip_serializing_if = "Option::is_none")]
     cnpj: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     cpf: Option<String>,
     nome: String,
 }
@@ -98,15 +117,17 @@ pub struct Valor {
     /// A ausencia deste campo, que é o mesmo que 0, significa que a cobrança não poderá ter seu valor alterado.
     /// No caso do valor de 1, significa que o valor final poderá ser alterado pelo pagador.
     #[serde(rename = "modalidadeAlteracao")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub permite_alteracao: Option<i32>,
 }
 
 impl Valor {
     // Valor com no máximo duas casas decimais. Caso houver mais que 2 casas, o valor será truncado.
     pub fn new(valor_original: f64, permite_alteracao: bool) -> Valor {
+        let permite_alteracao = if permite_alteracao { Some(1) } else { None };
         Self {
             original: format!("{:.2}", valor_original),
-            permite_alteracao: Some(permite_alteracao as i32),
+            permite_alteracao,
         }
     }
 }
@@ -136,9 +157,7 @@ impl PixClient {
 impl<'a> CobEndpoint<'a> {
     pub fn criar_cobranca_txid(&self, txid: String, payload: CobrancaImediata) -> ApiRequest<CobrancaImediata> {
         let endpoint = format!("{}/cob/{}", &*self.inner.base_endpoint, txid);
-        let request = self.inner.client.request(Method::PUT, endpoint);
-
-        ApiRequest::new(request.json(&payload))
+        self.inner.request_with_headers(Method::PUT, &*endpoint, payload)
     }
 
     pub fn consultar_cobranca_txid(&self, txid: String, payload: CobrancaImediata) -> ApiRequest<CobrancaImediata> {
@@ -159,7 +178,7 @@ impl<'a> CobEndpoint<'a> {
 
     pub fn consultar_cobrancas(&self) -> RequestBuilder {
         let endpoint = format!("{}/cob", &*self.inner.base_endpoint);
-        self.inner.client.request(Method::GET, endpoint)
+        self.inner.inner_client.request(Method::GET, &endpoint)
     }
 }
 

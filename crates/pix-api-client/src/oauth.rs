@@ -29,13 +29,14 @@ impl PixClient {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OauthTokenResponse {
     pub access_token: String,
-    pub expires_in: String,
+    pub token_type: String,
+    pub expires_in: i32,
     pub scope: String,
 }
 
 impl OauthTokenEndpoint<'_> {
-    pub fn autenticar(&self) -> ApiRequest<OauthTokenResponse> {
-        let endpoint = format!("{}/oauth/token", self.inner.base_endpoint);
+    pub fn autenticar(&self, full_custom_endpoint: Option<String>) -> ApiRequest<OauthTokenResponse> {
+        let endpoint = full_custom_endpoint.unwrap_or_else(|| format!("{}/oauth/token", self.inner.base_endpoint));
 
         self.inner
             .request_with_headers(Method::POST, &*endpoint, OauthTokenPayload::default())

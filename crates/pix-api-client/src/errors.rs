@@ -3,9 +3,17 @@ use thiserror::Error;
 
 pub type ApiResult<T> = Result<T, PixError>;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct GenericErrorMessage {
     nome: String,
+    mensagem: String,
+    errors: Option<Vec<Erros>>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Erros {
+    chave: String,
+    caminho: String,
     mensagem: String,
 }
 
@@ -19,11 +27,14 @@ pub enum PixError {
     #[error("Access token is expired. Renew it")]
     ExpiredToken(String),
 
-    #[error("Response differs from spec")]
-    NonCompliantResponse,
-
     #[error("There is something wrong with the payload this library sent.")]
     PayloadError,
+
+    #[error("`{0}`")]
+    Other(String),
+
+    #[error(transparent)]
+    NonCompliantResponse(#[from] serde_json::Error),
 
     #[error(transparent)]
     NetworkError(#[from] reqwest::Error),

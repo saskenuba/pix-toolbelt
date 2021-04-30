@@ -76,6 +76,7 @@
 //! # }
 //! ```
 //!
+pub use pix_brcode::qr_dinamico::PixDinamicoSchema;
 pub use reqwest::header;
 
 use std::marker::PhantomData;
@@ -85,7 +86,7 @@ use crate::errors::{ApiResult, PixError};
 use arc_swap::ArcSwap;
 use async_trait::async_trait;
 use reqwest::header::HeaderMap;
-use reqwest::{Certificate, Client, Method, RequestBuilder, StatusCode};
+use reqwest::{Certificate, Client, Identity, Method, Request, RequestBuilder, StatusCode};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
@@ -111,7 +112,7 @@ impl PixClientBuilder {}
 /// # Example
 #[derive(Debug)]
 pub struct PixClient {
-    client: Client,
+    inner_client: Client,
     /// Headers used for every request
     headers: ArcSwap<HeaderMap>,
     certificate: Vec<u8>,
@@ -152,42 +153,15 @@ impl PixClient {
     where
         F: FnMut(&mut HeaderMap),
     {
-        let cert = Certificate::from_pem(&certificate).unwrap();
+        let identity = Identity::from_pkcs12_der(&*certificate, "").expect("Invalid certificate");
         let mut default_headers = HeaderMap::new();
 
         custom_headers(&mut default_headers);
 
-        let client = Client::builder()
-            .add_root_certificate(cert)
-            .default_headers(default_headers.clone())
-            .build()
-            .unwrap();
+        let client = Client::builder().identity(identity).https_only(true).build().unwrap();
 
         Self {
-            client,
-            headers: ArcSwap::from_pointee(default_headers),
-            certificate,
-            base_endpoint: endpoint.to_string(),
-        }
-    }
-    pub fn new(endpoint: &str, username: &str, secret: &str, certificate: Vec<u8>) -> PixClient {
-        let formatted_authorization = format!("{}:{}", username, secret);
-        let encoded_auth = base64::encode(formatted_authorization);
-        let cert = Certificate::from_pem(&certificate).unwrap();
-
-        let mut default_headers = HeaderMap::new();
-        default_headers
-            .insert(header::AUTHORIZATION, (&*encoded_auth).parse().unwrap())
-            .unwrap();
-
-        let client = Client::builder()
-            .add_root_certificate(cert)
-            .default_headers(default_headers.clone())
-            .build()
-            .unwrap();
-
-        Self {
-            client,
+            inner_client: client,
             headers: ArcSwap::from_pointee(default_headers),
             certificate,
             base_endpoint: endpoint.to_string(),
@@ -196,14 +170,16 @@ impl PixClient {
 
     /// Call this method in order to change the value of your `Authorization` header.
     ///
+    /// For Bearer: `format!("Bearer {}", token)`
+    ///
+    /// For Basic: `format!("Basic {}:{}", id, secret)`
+    ///
     /// This is usually done after you fetch the oauth token.
     pub fn swap_authorization_token(&self, authorization_header_value: String) {
-        let mut default_headers = HeaderMap::new();
-        default_headers
-            .insert(header::AUTHORIZATION, authorization_header_value.parse().unwrap())
-            .unwrap();
+        let mut stored_header = HeaderMap::new();
+        stored_header.insert(header::AUTHORIZATION, authorization_header_value.parse().unwrap());
 
-        self.headers.store(Arc::new(default_headers));
+        self.headers.store(Arc::new(stored_header));
     }
 
     fn request_with_headers<Payload, Response>(
@@ -217,21 +193,29 @@ impl PixClient {
         Response: DeserializeOwned,
     {
         let inner_headers = &**self.headers.load();
-        let request = self.client.request(method, endpoint).headers(inner_headers.clone());
+        let request = self
+            .inner_client
+            .request(method, endpoint)
+            .headers(inner_headers.clone())
+            .json(&payload)
+            .build()
+            .unwrap();
 
-        ApiRequest::new(request.json(&payload))
+        ApiRequest::new(&self, request)
     }
 }
 
 #[derive(Debug)]
-pub struct ApiRequest<Response> {
-    request: RequestBuilder,
+pub struct ApiRequest<'a, Response> {
+    client: &'a PixClient,
+    request: Request,
     response_type: PhantomData<Response>,
 }
 
-impl<T> ApiRequest<T> {
-    fn new(request: RequestBuilder) -> ApiRequest<T> {
+impl<'a, T> ApiRequest<'a, T> {
+    fn new(client: &'a PixClient, request: Request) -> ApiRequest<T> {
         Self {
+            client,
             request,
             response_type: Default::default(),
         }
@@ -239,28 +223,33 @@ impl<T> ApiRequest<T> {
 }
 
 #[async_trait]
-impl<ResponseType> Executor<ResponseType> for ApiRequest<ResponseType>
+impl<ResponseType> Executor<ResponseType> for ApiRequest<'_, ResponseType>
 where
     ResponseType: DeserializeOwned + Send,
 {
     async fn execute(self) -> ApiResult<ResponseType> {
-        let result = self.request.send().await?;
+        let body = self
+            .request
+            .body()
+            .map(|x| x.as_bytes().map(|x| String::from_utf8(Vec::from(x)).unwrap()))
+            .flatten();
+        println!("{:?}", body);
+
+        let result = self.client.inner_client.execute(self.request).await?;
         let status_code = result.status();
 
+        let text = result.text().await?;
+        log::info!("{}", text);
+
         if !status_code.is_success() {
-            match status_code {
-                StatusCode::UNAUTHORIZED => return Err(PixError::InvalidCredentials),
-                StatusCode::BAD_REQUEST => return Err(PixError::PayloadError),
-                _ => {}
-            }
+            return match status_code {
+                StatusCode::UNAUTHORIZED => Err(PixError::InvalidCredentials),
+                StatusCode::BAD_REQUEST => Err(PixError::PayloadError),
+                _ => Err(PixError::Other(text)),
+            };
         }
 
-        let deserialized_response = result
-            .json::<ResponseType>()
-            .await
-            .map_err(|_| PixError::NonCompliantResponse)?;
-
-        Ok(deserialized_response)
+        serde_json::from_str::<ResponseType>(&*text).map_err(|e| e.into())
     }
 }
 
