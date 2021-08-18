@@ -1,6 +1,6 @@
 [package]
 name = "pix-api-client"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Martin <martin@hotmail.com.br>"]
 edition = "2018"
 repository = "https://github.com/saskenuba/pix-toolbelt/tree/master/crates/pix-api-client"
@@ -16,7 +16,7 @@ async-trait = "^0.1"
 base64 = "0.13"
 log = "^0.4"
 pix-brcode = { path = "../pix-brcode" }
-reqwest = { version = "0.10", features = ["json", "native-tls"] }
+reqwest = { version = "^0.11", features = ["json", "native-tls"] }
 serde = { version = "^1.0", features = ["derive"] }
 serde_json = "^1.0"
 thiserror = "1.0.24"
