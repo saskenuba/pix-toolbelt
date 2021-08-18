@@ -22,7 +22,7 @@ impl Default for OauthTokenPayload {
 
 impl PixClient {
     pub fn oauth(&self) -> OauthTokenEndpoint {
-        OauthTokenEndpoint { inner: &self }
+        OauthTokenEndpoint { inner: self }
     }
 }
 

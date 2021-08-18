@@ -9,7 +9,7 @@ pub struct CobEndpoint<'a> {
 
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 #[allow(non_camel_case_types)]
-enum CobrancaStatus {
+pub enum CobrancaStatus {
     ATIVA,
     CONCLUIDA,
     REMOVIDA_PELO_USUARIO_RECEBEDOR,
@@ -19,7 +19,7 @@ enum CobrancaStatus {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CobrancaImediata {
     /// Por default, expira em 3600 segundos, i.e 1h
-    pub calendario: Option<Calendario>,
+    pub calendario: Calendario,
     pub devedor: Devedor,
     /// Valor em string
     pub valor: Valor,
@@ -35,6 +35,9 @@ pub struct CobrancaImediata {
     #[serde(rename = "loc")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub location: Option<Location>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<String>,
 
     /// Campo que será para que o pagador desta cobrança insira uma informação.
     /// Sua implementação depende do PSP do pagador. Não é garantido seu preenchimento. Verifique.
@@ -52,12 +55,13 @@ impl CobrancaImediata {
         let valor = Valor::new(valor, false);
 
         Self {
-            calendario: Some(Default::default()),
+            calendario: Default::default(),
             devedor,
             valor,
             chave_pix_recebedor,
             txid: None,
             location: None,
+            status: None,
             solicitacao_pagador: None,
             info_adicionais: None,
         }
@@ -150,7 +154,7 @@ pub struct InfoAdicionais {
 
 impl PixClient {
     pub fn cob(&self) -> CobEndpoint {
-        CobEndpoint { inner: &self }
+        CobEndpoint { inner: self }
     }
 }
 

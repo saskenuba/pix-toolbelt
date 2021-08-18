@@ -21,7 +21,7 @@ impl WebHookPayload {
 
 impl PixClient {
     pub fn webhook(&self) -> WebhookEndpoint {
-        WebhookEndpoint { inner: &self }
+        WebhookEndpoint { inner: self }
     }
 }
 

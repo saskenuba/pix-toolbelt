@@ -86,7 +86,7 @@ use crate::errors::{ApiResult, PixError};
 use arc_swap::ArcSwap;
 use async_trait::async_trait;
 use reqwest::header::HeaderMap;
-use reqwest::{Certificate, Client, Identity, Method, Request, RequestBuilder, StatusCode};
+use reqwest::{Client, Identity, Method, Request, StatusCode};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
@@ -201,7 +201,7 @@ impl PixClient {
             .build()
             .unwrap();
 
-        ApiRequest::new(&self, request)
+        ApiRequest::new(self, request)
     }
 }
 
