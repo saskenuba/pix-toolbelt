@@ -3,8 +3,9 @@ name = "pix-brcode"
 version = "0.1.0"
 authors = ["Martin <martin@hotmail.com.br>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+repository = "https://github.com/saskenuba/pix-toolbelt/tree/master/crates/pix-brcode"
+license = "MIT"
+description = "A ready to use compliant PIX specification, featuring fast de/serialization."
 
 [dependencies]
 serde = { version = "^1.0", features = ["derive"] }
