@@ -1,5 +1,6 @@
-use emv_qrcps::EmvEncoder;
 use std::borrow::Cow;
+
+use emv_qrcps::EmvEncoder;
 
 #[derive(EmvEncoder, Clone, Debug)]
 pub struct AdditionalData<'a> {
