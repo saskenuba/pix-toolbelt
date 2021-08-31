@@ -1,11 +1,12 @@
 use darling::FromField;
 use proc_macro::TokenStream;
-use proc_macro2::TokenStream as TokenStream2;
+use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::quote;
 use syn::punctuated::Punctuated;
 use syn::{parse_macro_input, Data, DeriveInput, Error, Fields, GenericArgument, Ident, PathArguments, Token, Type};
 
 use crate::borrowed::generate_parser_impl;
+use proc_macro_crate::{crate_name, FoundCrate};
 
 mod borrowed;
 
@@ -39,7 +40,7 @@ pub fn derive_helper_attr(item: TokenStream) -> TokenStream {
         _ => {
             return Error::new(struct_name.span(), "Derive only available for structs.")
                 .to_compile_error()
-                .into()
+                .into();
         }
     };
 
@@ -64,12 +65,15 @@ pub fn derive_helper_attr(item: TokenStream) -> TokenStream {
     let push_output_tokens = field.iter().map(format_serializer_token).collect::<Vec<_>>();
     let parser_impl = generate_parser_impl(struct_name, &*field);
 
+    let crc_fn_use_token = import_from_crate(quote! {helpers::calculate_crc16});
+    let traits_token = import_from_crate(quote! {{Size, Encode}});
+
     let output = quote! {
 
         impl<'a> #struct_name<'a> {
 
             fn serialize(&self) -> String {
-                use emv_qrcps::{Size, Encode};
+                use #traits_token;
 
                 let mut output = String::with_capacity(150);
                 #(#push_output_tokens)*
@@ -77,12 +81,13 @@ pub fn derive_helper_attr(item: TokenStream) -> TokenStream {
             }
 
             pub fn serialize_with_src(&self) -> String {
-                use emv_qrcps::{Size, Encode};
+                use #traits_token;
+                use #crc_fn_use_token;
 
                 let mut output = String::with_capacity(150);
                 #(#push_output_tokens)*
                 output.push_str("6304");
-                let crc = emv_qrcps::helpers::calculate_crc16(&*output);
+                let crc = calculate_crc16(&*output);
                 output.push_str(&*format!("{:X}", crc));
                 output
             }
@@ -169,7 +174,7 @@ fn is_string_from_arguments(arg: &GenericArgument) -> bool {
                     _ => false,
                 },
                 _ => false,
-            }
+            };
         }
         _ => false,
     }
@@ -210,5 +215,17 @@ fn field_is_option(kind: &syn::Type) -> bool {
             _ => false,
         },
         _ => false,
+    }
+}
+
+fn import_from_crate(path: TokenStream2) -> TokenStream2 {
+    let found_crate = crate_name("emv-qrcps").expect("emv-qrcps is present in `Cargo.toml`");
+
+    match found_crate {
+        FoundCrate::Itself => quote!(crate::#path),
+        FoundCrate::Name(name) => {
+            let ident = Ident::new(&name, Span::call_site());
+            quote!( #ident::#path )
+        }
     }
 }

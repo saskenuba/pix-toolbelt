@@ -2,7 +2,7 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use syn::Ident;
 
-use crate::{field_is_option, field_is_stringy, ident_from_type, FieldKind};
+use crate::{field_is_option, field_is_stringy, ident_from_type, import_from_crate, FieldKind};
 
 fn pre_tokenizer(field: &FieldKind) -> (TokenStream2, TokenStream2) {
     let name = &field.name;
@@ -47,9 +47,12 @@ pub(crate) fn generate_parser_impl(struct_name: &Ident, fields: &[FieldKind]) ->
     // pre for any operation before the Self constructor
     // final for inside the Self constructor
 
+    let parsed_trait_token = import_from_crate(quote! {Parsed});
+    let base_parser_token = import_from_crate(quote! {base_parser});
+
     quote! {
 
-        impl<'a> emv_qrcps::Parsed<'a> for #struct_name<'a> {
+        impl<'a> #parsed_trait_token<'a> for #struct_name<'a> {
            fn from_lookup(map: &mut ::std::collections::HashMap<&str, &'a str>) -> Self {
                 #(#pre)*
 
@@ -63,7 +66,7 @@ pub(crate) fn generate_parser_impl(struct_name: &Ident, fields: &[FieldKind]) ->
 
             #[doc = "Deserializes the source string as this struct."]
             pub fn from_str(source_str: &'a str) -> Self {
-                emv_qrcps::base_parser(source_str)
+                #base_parser_token(source_str)
             }
 
         }
