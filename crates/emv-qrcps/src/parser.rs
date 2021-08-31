@@ -1,13 +1,10 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::str::FromStr;
 
 use emv_qrcps_derive::EmvEncoder;
 use strum::IntoEnumIterator;
 use strum_macros::{EnumIter, IntoStaticStr};
-
-use std::borrow::Cow;
-
-use crate as emv_qrcps;
 
 #[derive(IntoStaticStr, EnumIter)]
 pub enum HasChildren {
@@ -39,32 +36,22 @@ where
     let mut lookup = HashMap::new();
 
     while let Some((header_id, content_length, rest)) = header_length_remaining(cursor) {
-        println!("{:?}{:?}", header_id, content_length);
-
         let length_index = usize::from_str(content_length).unwrap();
         let content = &rest[..length_index];
         let remaining = &rest[length_index..];
 
         lookup.insert(header_id, content);
 
-        println!("content: {:?}", content);
-        println!("remaining: {:?}", remaining);
-
         if HasChildren::iter()
             .map(|str| str.into())
             .any(|header_with_son: &str| header_with_son == header_id)
         {
             let mut inner_content = content;
-            println!("Header has son.");
 
-            while let Some((header, length, remaining)) = header_length_remaining(inner_content) {
-                println!("{:?}{:?}", header, length);
-
+            while let Some((_header, length, remaining)) = header_length_remaining(inner_content) {
                 let length_index = usize::from_str(length).unwrap();
-                let content = &remaining[..length_index];
+                let _content = &remaining[..length_index];
                 let remaining = &remaining[length_index..];
-                println!("content: {:?}", content);
-                println!("remaining: {:?}", remaining);
 
                 inner_content = remaining;
             }
@@ -86,7 +73,6 @@ pub fn header_length_remaining(pix_string: &str) -> Option<(&str, &str, &str)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::helpers;
 
     fn sample_merchant() -> &'static str {
         "0028123e4567-e12b-12d1-a456-42720102oi"
@@ -102,22 +88,25 @@ mod tests {
         assert_eq!(basic, MerchantAccountInformation::from_str(sample_merchant()));
     }
 
+    #[allow(dead_code)]
     fn bacen_static_sample() -> &'static str {
         "00020126580014br.gov.bcb.pix0136123e4567-e12b-12d1-a456-4266554400005204000053039865802BR5913Fulano de \
          Tal6008BRASILIA62070503***63041D3D"
     }
 
+    #[allow(dead_code)]
     fn bacen_dynamic_sample() -> &'static str {
         "00020101021226700014br.gov.bcb.pix2548pix.example.com/\
          8b3da2f39a4140d1a91abd93113bd4415204000053039865802BR5913Fulano de Tal6008BRASILIA62070503***630464E4"
     }
 
+    #[allow(dead_code)]
     fn generated_sample() -> &'static str {
         "00020126530014br.gov.bcb.pix0119saskenuba@gmail.com0208[Pix.ae]520400005303986540550.\
          005802BR5903Pix6003Pix62070503***63048287"
     }
 
-    #[derive(BrCodeEncoder, Debug, Clone)]
+    #[derive(EmvEncoder, Debug, Clone)]
     struct SampleBrCode<'a> {
         #[encoder(id = "00")]
         format_indicator: Cow<'a, str>,
@@ -126,7 +115,7 @@ mod tests {
         merchant_name: Cow<'a, str>,
     }
 
-    #[derive(BrCodeEncoder, Debug, Clone)]
+    #[derive(EmvEncoder, Debug, Clone)]
     struct SampleBrCodeOption<'a> {
         #[encoder(id = "00")]
         format_indicator: Cow<'a, str>,
@@ -138,7 +127,7 @@ mod tests {
         merchant_category: Option<Cow<'a, str>>,
     }
 
-    #[derive(BrCodeEncoder, Debug, Clone)]
+    #[derive(EmvEncoder, Debug, Clone)]
     struct SampleBrCodeWithInnerOption<'a> {
         #[encoder(id = "00")]
         format_indicator: Cow<'a, str>,
@@ -150,7 +139,7 @@ mod tests {
         additional_data: InnerSample<'a>,
     }
 
-    #[derive(BrCodeEncoder, Debug, Clone)]
+    #[derive(EmvEncoder, Debug, Clone)]
     struct InnerSample<'a> {
         #[encoder(id = "00")]
         what_is_this: Cow<'a, str>,
@@ -188,10 +177,5 @@ mod tests {
         };
 
         assert_eq!(sample.serialize(), "0002015904LTDA6206000201");
-    }
-
-    #[test]
-    fn string_validation() {
-        let validate = helpers::calculate_crc16(bacen_static_sample());
     }
 }

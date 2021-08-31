@@ -1,5 +1,6 @@
-use crc::{Algorithm, Crc, CRC_16_IBM_3740};
 use std::borrow::Cow;
+
+use crc::{Algorithm, Crc, CRC_16_IBM_3740};
 
 pub(crate) const CRC_ALGO: Algorithm<u16> = CRC_16_IBM_3740;
 
