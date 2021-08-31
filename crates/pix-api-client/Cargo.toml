@@ -26,4 +26,4 @@ version = "0.1.0"
 path = "../pix-brcode"
 
 [dev-dependencies]
-anyhow = "*"
+anyhow = "1"
