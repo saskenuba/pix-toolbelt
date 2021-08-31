@@ -1,6 +1,6 @@
 [package]
 name = "emv-qrcps-derive"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Martin <martin@hotmail.com.br>"]
 edition = "2018"
 repository = "https://github.com/saskenuba/pix-toolbelt/tree/master/crates/emv-qrcps-derive"
@@ -11,6 +11,7 @@ description = "Derive macros for emv-qrcos crate"
 
 [dependencies]
 proc-macro2 = "1.0.28"
+proc-macro-crate = "1"
 syn = "1.0"
 quote = "1.0"
 darling = "0.13"
