@@ -1,6 +1,6 @@
 [package]
 name = "pix-api-client"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Martin <martin@hotmail.com.br>"]
 edition = "2018"
 repository = "https://github.com/saskenuba/pix-toolbelt/tree/master/crates/pix-api-client"
