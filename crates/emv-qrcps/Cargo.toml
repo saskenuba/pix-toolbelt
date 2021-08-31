@@ -5,6 +5,7 @@ authors = ["Martin <martin@hotmail.com.br>"]
 edition = "2018"
 repository = "https://github.com/saskenuba/pix-toolbelt/tree/master/crates/emv-qrcps"
 description = "Features a non-alloc deserializer, and a serializer for any specification based on EMV-QrCode."
+license = "MIT"
 
 [features]
 default = []
