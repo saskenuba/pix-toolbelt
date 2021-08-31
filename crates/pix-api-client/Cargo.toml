@@ -5,6 +5,7 @@ authors = ["Martin <martin@hotmail.com.br>"]
 edition = "2018"
 repository = "https://github.com/saskenuba/pix-toolbelt/tree/master/crates/pix-api-client"
 license = "MIT"
+description = "A PIX API client for any compliant PSP."
 
 [features]
 default = []
