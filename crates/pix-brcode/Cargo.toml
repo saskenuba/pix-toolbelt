@@ -10,4 +10,7 @@ description = "A ready to use compliant PIX specification, featuring fast de/ser
 [dependencies]
 serde = { version = "^1.0", features = ["derive"] }
 serde_json = "^1.0"
-emv-qrcps = { path = "../emv-qrcps" }
+
+[dependencies.emv-qrcps]
+version = "0.1.1"
+path = "../emv-qrcps"
