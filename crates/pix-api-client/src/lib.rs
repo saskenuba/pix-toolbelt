@@ -18,24 +18,26 @@
 //!
 //! let mut cert_buffer = Vec::new();
 //! File::open("my_cert.pem")?.read_to_end(&mut cert_buffer)?;
-//!     
+//!
 //! // format your headers the way your PSP expects it
 //! // this is just an example
-//! let pix_client = PixClient::new_with_custom_headers("https://my-pix-h", |headers| {
-//!     let username = "my-id";
-//!     let secret = "my-secret";
-//!     let formatted_authorization = format!("{}:{}", username, secret);
-//!     let encoded_auth = base64::encode(formatted_authorization);
+//! let pix_client = PixClient::new_with_custom_headers(
+//!     "https://my-pix-h",
+//!     |headers| {
+//!         let username = "my-id";
+//!         let secret = "my-secret";
+//!         let formatted_authorization = format!("{}:{}", username, secret);
+//!         let encoded_auth = base64::encode(formatted_authorization);
 //!
-//!     // and then insert it
-//!     headers.insert(header::AUTHORIZATION, encoded_auth.parse().unwrap()).unwrap();
-//! }, cert_buffer);
+//!         // and then insert it
+//!         headers
+//!             .insert(header::AUTHORIZATION, encoded_auth.parse().unwrap())
+//!             .unwrap();
+//!     },
+//!     cert_buffer,
+//! );
 //!
-//! let oauth_response = pix_client
-//!     .oauth()
-//!     .autenticar()
-//!     .execute()
-//!     .await?;
+//! let oauth_response = pix_client.oauth().autenticar().execute().await?;
 //!
 //! // retrieve your new access token, and store it as your new authorization header
 //! let token = oauth_response.access_token;
@@ -75,20 +77,19 @@
 //! # Ok(())
 //! # }
 //! ```
-//!
-pub use pix_brcode::qr_dinamico::PixDinamicoSchema;
-pub use reqwest::header;
-
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use crate::errors::{ApiResult, PixError};
 use arc_swap::ArcSwap;
 use async_trait::async_trait;
+pub use pix_brcode::qr_dinamico::PixDinamicoSchema;
+pub use reqwest::header;
 use reqwest::header::HeaderMap;
 use reqwest::{Client, Identity, Method, Request, StatusCode};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+
+use crate::errors::{ApiResult, PixError};
 
 pub mod cob;
 pub mod errors;
@@ -134,17 +135,23 @@ impl PixClient {
     /// use reqwest::header;
     ///
     /// # fn teste() -> Result<(), anyhow::Error> {
-    ///     let mut cert_buffer = Vec::new();
-    ///     File::open("my_cert.pem")?.read_to_end(&mut cert_buffer)?;
+    /// let mut cert_buffer = Vec::new();
+    /// File::open("my_cert.pem")?.read_to_end(&mut cert_buffer)?;
     ///
-    ///     let username = "my-id";
-    ///     let secret = "my-secret";
-    ///     let formatted_authorization = format!("{}:{}", username, secret);
-    ///     let encoded_auth = base64::encode(formatted_authorization);
+    /// let username = "my-id";
+    /// let secret = "my-secret";
+    /// let formatted_authorization = format!("{}:{}", username, secret);
+    /// let encoded_auth = base64::encode(formatted_authorization);
     ///
-    ///     let pix_client = PixClient::new_with_custom_headers("https://*", |headers| {
-    ///         headers.insert(header::AUTHORIZATION, encoded_auth.parse().unwrap()).unwrap();
-    ///     }, cert_buffer);
+    /// let pix_client = PixClient::new_with_custom_headers(
+    ///     "https://*",
+    ///     |headers| {
+    ///         headers
+    ///             .insert(header::AUTHORIZATION, encoded_auth.parse().unwrap())
+    ///             .unwrap();
+    ///     },
+    ///     cert_buffer,
+    /// );
     ///
     /// #   Ok(())
     /// # }
@@ -233,7 +240,7 @@ where
             .body()
             .map(|x| x.as_bytes().map(|x| String::from_utf8(Vec::from(x)).unwrap()))
             .flatten();
-        println!("{:?}", body);
+        log::info!("{:?}", body);
 
         let result = self.client.inner_client.execute(self.request).await?;
         let status_code = result.status();
