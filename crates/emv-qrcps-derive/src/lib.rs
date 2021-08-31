@@ -1,13 +1,11 @@
+use darling::FromField;
 use proc_macro::TokenStream;
+use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use syn::punctuated::Punctuated;
-use syn::{parse_macro_input, Data, DeriveInput, Error, Fields, GenericArgument, PathArguments, Token, Type};
-
-use darling::FromField;
-use syn::__private::TokenStream2;
+use syn::{parse_macro_input, Data, DeriveInput, Error, Fields, GenericArgument, Ident, PathArguments, Token, Type};
 
 use crate::borrowed::generate_parser_impl;
-use quote::__private::Ident;
 
 mod borrowed;
 

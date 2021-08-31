@@ -1,11 +1,10 @@
+use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use syn::Ident;
-use syn::__private::TokenStream2;
 
 use crate::{field_is_option, field_is_stringy, ident_from_type, FieldKind};
-use quote::__private::TokenStream;
 
-fn pre_tokenizer(field: &FieldKind) -> (TokenStream, TokenStream) {
+fn pre_tokenizer(field: &FieldKind) -> (TokenStream2, TokenStream2) {
     let name = &field.name;
     let id = &field.br_code_id;
 
