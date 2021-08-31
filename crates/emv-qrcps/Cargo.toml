@@ -3,6 +3,8 @@ name = "emv-qrcps"
 version = "0.1.1"
 authors = ["Martin <martin@hotmail.com.br>"]
 edition = "2018"
+repository = "https://github.com/saskenuba/pix-toolbelt/tree/master/crates/emv-qrcps"
+description = "Features a non-alloc deserializer, and a serializer for any specification based on EMV-QrCode."
 
 [features]
 default = []
@@ -13,7 +15,10 @@ crc = "2.0.0-rc.1"
 chrono = "^0.4"
 strum = "^0.20"
 strum_macros = "^0.20"
-emv-qrcps-derive = { path = "../emv-qrcps-derive" }
+
+[dependencies.emv-qrcps-derive]
+version = "0.1.2"
+path = "../emv-qrcps-derive"
 
 
 
