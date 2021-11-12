@@ -1,19 +1,24 @@
-# pix-api-client
+# Pix API Client
 
-You don't need to wrap the client into an `Arc`, since its inner reqwest client already is wrapped.
+A Rust PIX API client, [Bacen API Pix](https://github.com/bacen/pix-api)
+compliant.
 
-### Note
+### Notes
 
-You need to take care munually of renewing your oauth token. This is accomplished very easily
-with the helper functions provided by the `PixClient`.
+The inner client is wrapped with `Arc` ready for reuse.
 
-## Example: Create a new client and fetch the oauth token
+You need to manually renew your OAuth token. This is accomplished easily with
+helper functions provided by the `PixClient`.
+
+
+## Examples
+
+### Setup a ready to use client
 
 ```rust
 use pix_api_client::cob::CobrancaImediata;
 use pix_api_client::{Executor, PixClient};
-use reqwest::header;
-
+use pix_api_client::header::AUTHORIZATION;
 
 let mut cert_buffer = Vec::new();
 File::open("my_cert.pem")?.read_to_end(&mut cert_buffer)?;
@@ -40,15 +45,15 @@ let oauth_response = pix_client
 let token = oauth_response.access_token;
 pix_client.swap_authorization_token(token.to_string());
 
-// Your client is ready for any further api calls.
+// That's it! Your client is ready for any further api calls.
 
 ```
 
-## Example: Create a new QRCode from a create immediate transaction endpoint
+### Create a new QRCode from `criar_cobranca_imediata` endpoint
+
 ```rust
 use pix_api_client::cob::{CobrancaImediata, Devedor};
-use pix_api_client::{Executor, PixClient};
-use pix_brcode::qr_dinamico::PixDinamicoSchema;
+use pix_api_client::{Executor, PixClient, PixDinamicoSchema};
 use pix_api_client::extensions::FromResponse;
 
 
@@ -62,8 +67,7 @@ let response: CobrancaImediata = pix_client
     .await?;
 
 let pix: String = PixDinamicoSchema::from_cobranca_imediata_basic(response, "minha loja", "minha cidade").serialize_with_src();
-
+assert_eq!(pix, "00020104141234567890123426580014BR.GOV.BCB.PIX0136123e4567-e12b-12d1-a456-42665544000027300012BR.COM. OUTRO011001234567895204000053039865406123.455802BR5917NOME DO RECEBEDOR6008BRASILIA61087007490062190515RP12345678-201980390012BR.COM.OUTRO01190123.ABCD.3456.WXYZ6304AD38");
 ```
-
 
 License: MIT
