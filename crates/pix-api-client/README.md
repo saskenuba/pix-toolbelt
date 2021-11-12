@@ -3,6 +3,18 @@
 A Rust PIX API client, [Bacen API Pix](https://github.com/bacen/pix-api)
 compliant.
 
+Before usage, check if your PSP is also compliant or this won't work.
+
+## Usage
+
+Add the following to your `Cargo.toml`:
+```toml
+[dependencies]
+pix-api-client = "^0.2"
+```
+
+See the [documentation](https://docs.rs/pix-api-client) for detailed usage information.
+
 ### Notes
 
 The inner client is wrapped with `Arc` ready for reuse.
