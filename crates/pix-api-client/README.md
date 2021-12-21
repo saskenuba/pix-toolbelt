@@ -1,7 +1,7 @@
 # Pix API Client
 
-![Crate version on crates.io](https://img.shields.io/crates/v/pix-api-client)
-![Crate documentation on docs.rs](https://img.shields.io/docsrs/pix-api-client)
+[![Crate version on crates.io](https://img.shields.io/crates/v/pix-api-client)](https://crates.io/crates/pix-api-client)
+[![Crate documentation on docs.rs](https://img.shields.io/docsrs/pix-api-client)](https://docs.rs/pix-api-client/0.2.1)
 ![Crate license](https://img.shields.io/crates/l/pix-api-client)
 
 A Rust PIX API client, [Bacen API Pix](https://github.com/bacen/pix-api)
